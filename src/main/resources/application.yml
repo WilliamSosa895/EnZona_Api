@@ -1,0 +1,126 @@
+# =====================================================================
+#  EnZona API — configuración. Los secretos SIEMPRE llegan por variables
+#  de entorno (ver .env.example); aquí solo hay valores no sensibles.
+# =====================================================================
+spring:
+  application:
+    name: enzona-api
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      # El plan gratuito de Aiven admite 20 conexiones: se deja margen para psql y migraciones.
+      maximum-pool-size: ${DB_POOL_MAX:8}
+      minimum-idle: 1
+      connection-timeout: 10000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    # Si la base ya se creó con esquema_enzona_v2.sql, se toma como versión 1.
+    baseline-on-migrate: true
+    baseline-version: 1
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+enzona:
+  jwt:
+    secreto: ${JWT_SECRET}
+    emisor: ${JWT_ISSUER:enzona-api}
+    expiracion-minutos: ${JWT_EXPIRATION_MINUTES:60}
+  boletos:
+    secreto-hmac: ${TICKET_HMAC_SECRET}
+  curp:
+    clave-cifrado: ${CURP_ENCRYPTION_KEY}
+    clave-indice: ${CURP_INDEX_KEY}
+  ordenes:
+    minutos-reserva: ${ORDER_RESERVATION_MINUTES:10}
+    maximo-boletos-por-orden: ${ORDER_MAX_TICKETS:10}
+  verificacion:
+    minutos-vigencia: ${OTP_VALIDITY_MINUTES:10}
+    maximo-intentos: ${OTP_MAX_ATTEMPTS:5}
+  sesion:
+    maximo-intentos: ${LOGIN_MAX_ATTEMPTS:5}
+    minutos-bloqueo: ${LOGIN_LOCK_MINUTES:15}
+  pasarela:
+    proveedor: ${PAYMENT_PROVIDER:sandbox}
+    secreto-webhook: ${PAYMENT_WEBHOOK_SECRET}
+  notificaciones:
+    modo: ${NOTIFICATIONS_MODE:log}
+    remitente: ${MAIL_FROM:no-reply@enzona.mx}
+  eventos:
+    horas-duracion-por-defecto: ${EVENT_DEFAULT_DURATION_HOURS:6}
+    radio-maximo-km: ${EVENT_MAX_RADIUS_KM:50}
+  admin:
+    nombre: ${ADMIN_NAME:Administrador EnZona}
+    correo: ${ADMIN_EMAIL:}
+    contrasena: ${ADMIN_PASSWORD:}
+  cors:
+    origenes: ${CORS_ORIGINS:http://localhost:5173}
+
+logging:
+  level:
+    root: INFO
+    com.uv.enzona: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    com.uv.enzona: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
