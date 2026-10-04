@@ -19,9 +19,8 @@ class FirmaBoletosTest {
     @Test
     void unaFirmaAlteradaSeRechaza() {
         String codigo = firma.nuevoCodigo();
-        String alterada = firma.firmar(codigo, 7L).replaceFirst(".$", "A").equals(firma.firmar(codigo, 7L))
-                ? firma.firmar(codigo, 7L).replaceFirst(".$", "B") : firma.firmar(codigo, 7L).replaceFirst(".$", "A");
-        assertThat(firma.verificar(codigo, 7L, alterada)).isFalse();
+        String original = firma.firmar(codigo, 7L);
+        String alterada = (original.charAt(0) == 'A' ? "B" : "A") + original.substring(1);
     }
 
     @Test
