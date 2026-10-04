@@ -21,24 +21,27 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base de las pruebas de integración: levanta PostgreSQL 15 en un contenedor, aplica las
- * migraciones de Flyway y arranca la API completa. Requiere Docker; sin Docker se omiten.
+ * migraciones de Flyway y arranca la API completa. Requiere Docker ({@code mvn verify}).
+ *
+ * <p>El contenedor es único para toda la ejecución (patrón singleton): así el contexto de Spring
+ * que se reutiliza entre clases de prueba nunca apunta a un contenedor ya detenido.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers(disabledWithoutDocker = true)
 abstract class IntegracionBase {
 
     protected static final String CONTRASENA = "Secreta123";
 
-    @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:15-alpine");
+
+    static {
+        POSTGRES.start();
+    }
 
     @Autowired
     protected MockMvc mvc;
