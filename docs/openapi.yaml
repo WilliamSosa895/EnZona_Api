@@ -1,0 +1,1036 @@
+openapi: 3.0.3
+info:
+  title: EnZona API
+  version: 0.1.0
+  description: |
+    API REST de EnZona: descubrimiento de eventos por ubicación, boletaje gratuito y de pago,
+    boletos firmados con QR de un solo uso y validación en puerta con modo sin conexión.
+    Área de estudio: Orizaba, Veracruz.
+
+    Esta especificación documenta la versión 0.1.0. Con la API en ejecución, springdoc publica
+    la versión generada en /v3/api-docs y la interfaz interactiva en /swagger-ui.html.
+servers:
+  - url: http://localhost:8080
+    description: Desarrollo
+tags:
+  - name: Autenticación
+  - name: Perfil
+  - name: Eventos
+  - name: Organizador
+  - name: Órdenes
+  - name: Boletos
+  - name: Pagos
+  - name: Validación de acceso
+  - name: Administración
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/registro:
+    post:
+      tags: [Autenticación]
+      summary: Crea la cuenta en estado PENDIENTE y envía los códigos de verificación (RF-01)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistroSolicitud' }
+      responses:
+        '201':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RegistroRespuesta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+  /api/auth/verificacion:
+    post:
+      tags: [Autenticación]
+      summary: Confirma un código de un solo uso (RF-02)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificacionSolicitud' }
+      responses:
+        '200':
+          description: Verificación aplicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificacionRespuesta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '429': { $ref: '#/components/responses/DemasiadosIntentos' }
+  /api/auth/verificacion/reenvio:
+    post:
+      tags: [Autenticación]
+      summary: Envía un código nuevo (202 aunque el correo no exista)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReenvioSolicitud' }
+      responses:
+        '202': { description: Solicitud recibida }
+  /api/auth/sesion:
+    post:
+      tags: [Autenticación]
+      summary: Inicia sesión con correo o CURP y devuelve el JWT (RF-03)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SesionSolicitud' }
+      responses:
+        '200':
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SesionRespuesta' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '429': { $ref: '#/components/responses/DemasiadosIntentos' }
+
+  /api/usuarios/me:
+    get:
+      tags: [Perfil]
+      summary: Perfil propio (RF-04)
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerfilRespuesta' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+    put:
+      tags: [Perfil]
+      summary: Actualiza nombre y teléfono
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PerfilActualizacion' }
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerfilRespuesta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+  /api/usuarios/me/contrasena:
+    put:
+      tags: [Perfil]
+      summary: Cambia la contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CambioContrasena' }
+      responses:
+        '204': { description: Contraseña cambiada }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+  /api/usuarios/me/roles/organizador:
+    post:
+      tags: [Perfil]
+      summary: Activa el rol de organizador
+      responses:
+        '200':
+          description: Roles actualizados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioResumen' }
+    delete:
+      tags: [Perfil]
+      summary: Quita el rol de organizador
+      responses:
+        '200':
+          description: Roles actualizados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioResumen' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /api/eventos:
+    get:
+      tags: [Eventos]
+      summary: Lista eventos publicados vigentes; con lat y lng ordena por cercanía (RF-05 a RF-07, RF-19)
+      security: []
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: categoriaId, in: query, schema: { type: integer } }
+        - { name: ciudad, in: query, schema: { type: string } }
+        - { name: desde, in: query, schema: { type: string, format: date-time } }
+        - { name: hasta, in: query, schema: { type: string, format: date-time } }
+        - { name: esDePago, in: query, schema: { type: boolean } }
+        - { name: lat, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: radioKm, in: query, schema: { type: number, minimum: 0.1 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de eventos
+          headers:
+            X-Total-Count: { $ref: '#/components/headers/XTotalCount' }
+            X-Total-Pages: { $ref: '#/components/headers/XTotalPages' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EventoRespuesta' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+    post:
+      tags: [Eventos]
+      summary: Crea un evento en borrador o publicado (RF-08) [ORGANIZADOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoSolicitud' }
+      responses:
+        '201':
+          description: Evento creado
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventoRespuesta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/eventos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Eventos]
+      summary: Detalle del evento con tipos de boleto
+      security: []
+      responses:
+        '200':
+          description: Evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventoRespuesta' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Eventos]
+      summary: Modifica el evento con la política de RF-13 [ORGANIZADOR dueño]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoSolicitud' }
+      responses:
+        '200':
+          description: Evento modificado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventoRespuesta' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/eventos/{id}/publicacion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Eventos]
+      summary: Publica un borrador [ORGANIZADOR dueño]
+      responses:
+        '200':
+          description: Evento publicado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventoRespuesta' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/eventos/{id}/asientos:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Eventos]
+      summary: Mapa de asientos (RF-09)
+      responses:
+        '200':
+          description: Asientos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AsientoRespuesta' }
+  /api/eventos/{id}/validadores:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Eventos]
+      summary: Personal de acceso designado [ORGANIZADOR dueño o ADMIN]
+      responses:
+        '200':
+          description: Validadores
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ValidadorRespuesta' }
+    post:
+      tags: [Eventos]
+      summary: Designa a una cuenta activa como validador del evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [correo]
+              properties:
+                correo: { type: string, format: email }
+      responses:
+        '201':
+          description: Designado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidadorRespuesta' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/eventos/{id}/validadores/{usuarioId}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - { name: usuarioId, in: path, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      tags: [Eventos]
+      summary: Retira a un validador del evento
+      responses:
+        '204': { description: Retirado }
+  /api/eventos/{id}/politica-cancelacion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Eventos]
+      summary: Calcula si el evento puede cancelarse y el reembolso (RF-14)
+      responses:
+        '200':
+          description: Política
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PoliticaCancelacion' }
+  /api/eventos/{id}/cancelacion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Eventos]
+      summary: Cancela el evento, anula boletos, reembolsa y avisa (RF-14) [ORGANIZADOR dueño o ADMIN]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelacionSolicitud' }
+      responses:
+        '200':
+          description: Evento cancelado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CancelacionRespuesta' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/eventos/{id}/reportes:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Organizador]
+      summary: Panel del organizador (RF-17)
+      responses:
+        '200':
+          description: Reporte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReporteRespuesta' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+  /api/eventos/{id}/manifiesto:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Validación de acceso]
+      summary: Lista de boletos para validar sin conexión (RNF-08)
+      responses:
+        '200':
+          description: Manifiesto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ManifiestoRespuesta' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+  /api/categorias:
+    get:
+      tags: [Eventos]
+      summary: Catálogo de categorías
+      security: []
+      responses:
+        '200':
+          description: Categorías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    nombre: { type: string }
+  /api/organizador/eventos:
+    get:
+      tags: [Organizador]
+      summary: Todos mis eventos [ORGANIZADOR]
+      responses:
+        '200':
+          description: Eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EventoRespuesta' }
+
+  /api/ordenes:
+    post:
+      tags: [Órdenes]
+      summary: Crea la orden de N boletos (todo o nada) y cobra o confirma (RF-10 a RF-12)
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Clave única por intento de compra (8 a 64 caracteres A-Z a-z 0-9 - _)
+          schema: { type: string, minLength: 8, maxLength: 64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CrearOrdenSolicitud' }
+      responses:
+        '201':
+          description: Orden nueva (PAGADA, CANCELADA por pago rechazado o PENDIENTE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrdenRespuesta' }
+        '200':
+          description: Reintento con la misma Idempotency-Key (misma orden, sin nuevo cobro)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrdenRespuesta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/ordenes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Órdenes]
+      summary: Orden propia con sus boletos
+      responses:
+        '200':
+          description: Orden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrdenRespuesta' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+  /api/boletos:
+    get:
+      tags: [Boletos]
+      summary: Mis boletos
+      responses:
+        '200':
+          description: Boletos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BoletoRespuesta' }
+  /api/boletos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Boletos]
+      summary: Un boleto propio
+      responses:
+        '200':
+          description: Boleto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoletoRespuesta' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+  /api/pagos/webhook:
+    post:
+      tags: [Pagos]
+      summary: Notificación firmada de la pasarela para cobros pendientes
+      security: []
+      parameters:
+        - name: X-Pasarela-Firma
+          in: header
+          required: true
+          description: HMAC-SHA256 en hexadecimal del cuerpo, con PAYMENT_WEBHOOK_SECRET
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claveIdempotencia, estado]
+              properties:
+                claveIdempotencia: { type: string, example: orden-33 }
+                referencia: { type: string }
+                estado: { type: string, enum: [APROBADO, RECHAZADO, PENDIENTE, DESCONOCIDO] }
+      responses:
+        '200':
+          description: Recibido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recibido: { type: boolean }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  /api/validaciones:
+    post:
+      tags: [Validación de acceso]
+      summary: Valida un QR y lo marca como usado de forma atómica (RF-15)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventoId, qr]
+              properties:
+                eventoId: { type: integer, format: int64 }
+                qr: { type: string, description: 'Texto leído del QR: codigo.firma' }
+      responses:
+        '200':
+          description: Resultado (también cuando se rechaza el acceso)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidacionRespuesta' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+  /api/validaciones/sincronizar:
+    post:
+      tags: [Validación de acceso]
+      summary: Sube los escaneos hechos sin conexión y resuelve conflictos (RNF-08)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SincronizacionSolicitud' }
+      responses:
+        '200':
+          description: Resultado de la sincronización
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SincronizacionRespuesta' }
+
+  /api/admin/usuarios:
+    get:
+      tags: [Administración]
+      summary: Lista cuentas (RF-18) [ADMIN]
+      parameters:
+        - { name: estado, in: query, schema: { $ref: '#/components/schemas/EstadoUsuario' } }
+        - { name: q, in: query, schema: { type: string } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Cuentas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UsuarioAdminRespuesta' }
+  /api/admin/usuarios/{id}/estado:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Administración]
+      summary: Bloquea o reactiva una cuenta [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [ACTIVO, BLOQUEADO] }
+      responses:
+        '200':
+          description: Cuenta actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioAdminRespuesta' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/admin/eventos:
+    get:
+      tags: [Administración]
+      summary: Eventos en cualquier estado [ADMIN]
+      parameters:
+        - { name: estado, in: query, schema: { $ref: '#/components/schemas/EstadoEvento' } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EventoRespuesta' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  headers:
+    XTotalCount:
+      description: Total de elementos
+      schema: { type: integer }
+    XTotalPages:
+      description: Total de páginas
+      schema: { type: integer }
+  responses:
+    Validacion:
+      description: Datos no válidos (VALIDACION, SOLICITUD_INVALIDA, códigos de verificación)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    NoAutenticado:
+      description: Sin token válido o credenciales incorrectas
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    Prohibido:
+      description: Sin permiso, cuenta pendiente o bloqueada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    NoEncontrado:
+      description: Recurso inexistente o no visible
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    Conflicto:
+      description: Choque con el estado actual (aforo agotado, asiento ocupado, duplicados, políticas)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    ReglaNegocio:
+      description: Regla de negocio incumplida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    DemasiadosIntentos:
+      description: Demasiados intentos
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+  schemas:
+    Problema:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        codigo: { type: string, example: AFORO_AGOTADO }
+        timestamp: { type: string }
+        errores:
+          type: array
+          items:
+            type: object
+            properties:
+              campo: { type: string }
+              mensaje: { type: string }
+    Dinero:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      example: '360.00'
+    EstadoUsuario: { type: string, enum: [PENDIENTE, ACTIVO, BLOQUEADO] }
+    EstadoEvento: { type: string, enum: [BORRADOR, PUBLICADO, REALIZADO, CANCELADO] }
+    EstadoOrden: { type: string, enum: [PENDIENTE, PAGADA, CANCELADA, REEMBOLSADA] }
+    EstadoPago: { type: string, enum: [APROBADO, RECHAZADO, REEMBOLSADO] }
+    EstadoBoleto: { type: string, enum: [VALIDO, USADO, CANCELADO, EXPIRADO] }
+    EstadoAsiento: { type: string, enum: [DISPONIBLE, RESERVADO, OCUPADO] }
+    CanalVerificacion: { type: string, enum: [CORREO, TELEFONO] }
+    MotivoRechazo:
+      type: string
+      enum: [FORMATO_INVALIDO, BOLETO_INEXISTENTE, FIRMA_INVALIDA, OTRO_EVENTO, EVENTO_CANCELADO, YA_UTILIZADO, CANCELADO, EXPIRADO]
+    RegistroSolicitud:
+      type: object
+      required: [nombre, correo, curp, contrasena, aceptaAvisoPrivacidad]
+      properties:
+        nombre: { type: string, maxLength: 120 }
+        correo: { type: string, format: email, maxLength: 180 }
+        telefono: { type: string, pattern: '^\+?[0-9]{10,15}$', nullable: true }
+        curp: { type: string, example: PERA000229MDFRRSA1 }
+        contrasena: { type: string, minLength: 8, maxLength: 72, format: password }
+        organizador: { type: boolean }
+        aceptaAvisoPrivacidad: { type: boolean, enum: [true] }
+    RegistroRespuesta:
+      type: object
+      properties:
+        usuarioId: { type: integer, format: int64 }
+        correo: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoUsuario' }
+        verificacionesPendientes:
+          type: array
+          items: { $ref: '#/components/schemas/CanalVerificacion' }
+    VerificacionSolicitud:
+      type: object
+      required: [correo, codigo]
+      properties:
+        correo: { type: string, format: email }
+        canal: { $ref: '#/components/schemas/CanalVerificacion' }
+        codigo: { type: string, pattern: '^[0-9]{6}$' }
+    VerificacionRespuesta:
+      type: object
+      properties:
+        estado: { $ref: '#/components/schemas/EstadoUsuario' }
+        correoVerificado: { type: boolean }
+        telefonoVerificado: { type: boolean }
+        verificacionesPendientes:
+          type: array
+          items: { $ref: '#/components/schemas/CanalVerificacion' }
+    ReenvioSolicitud:
+      type: object
+      required: [correo]
+      properties:
+        correo: { type: string, format: email }
+        canal: { $ref: '#/components/schemas/CanalVerificacion' }
+    SesionSolicitud:
+      type: object
+      required: [identificador, contrasena]
+      properties:
+        identificador: { type: string, description: Correo o CURP }
+        contrasena: { type: string, format: password }
+    UsuarioResumen:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string }
+        correo: { type: string }
+        roles:
+          type: array
+          items: { type: string, enum: [ASISTENTE, ORGANIZADOR, VALIDADOR, ADMIN] }
+    SesionRespuesta:
+      type: object
+      properties:
+        token: { type: string }
+        tipo: { type: string, example: Bearer }
+        expiraEnSegundos: { type: integer }
+        expiraEn: { type: string, format: date-time }
+        usuario: { $ref: '#/components/schemas/UsuarioResumen' }
+    PerfilRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string }
+        correo: { type: string }
+        telefono: { type: string, nullable: true }
+        correoVerificado: { type: boolean }
+        telefonoVerificado: { type: boolean }
+        estado: { $ref: '#/components/schemas/EstadoUsuario' }
+        roles: { type: array, items: { type: string } }
+        fechaRegistro: { type: string, format: date-time }
+    PerfilActualizacion:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: { type: string, maxLength: 120 }
+        telefono: { type: string, nullable: true }
+    CambioContrasena:
+      type: object
+      required: [actual, nueva]
+      properties:
+        actual: { type: string, format: password }
+        nueva: { type: string, format: password, minLength: 8, maxLength: 72 }
+    TipoBoletoSolicitud:
+      type: object
+      required: [nombre, precio, cantidad]
+      properties:
+        id: { type: integer, format: int64, nullable: true, description: Solo al modificar }
+        nombre: { type: string, maxLength: 80 }
+        precio: { type: number, minimum: 0 }
+        cantidad: { type: integer, minimum: 1 }
+    SeccionSolicitud:
+      type: object
+      required: [nombre, filas, asientosPorFila]
+      properties:
+        nombre: { type: string, maxLength: 40 }
+        filas: { type: integer, minimum: 1, maximum: 26 }
+        asientosPorFila: { type: integer, minimum: 1, maximum: 200 }
+    EventoSolicitud:
+      type: object
+      required: [nombre, lugar, fechaHoraInicio, aforo]
+      properties:
+        nombre: { type: string, maxLength: 160 }
+        descripcion: { type: string, maxLength: 5000 }
+        lugar: { type: string, maxLength: 160 }
+        direccion: { type: string, maxLength: 240 }
+        ciudad: { type: string, maxLength: 80, default: Orizaba }
+        latitud: { type: number, minimum: -90, maximum: 90 }
+        longitud: { type: number, minimum: -180, maximum: 180 }
+        categoriaId: { type: integer }
+        fechaHoraInicio: { type: string, format: date-time }
+        fechaHoraFin: { type: string, format: date-time, nullable: true }
+        aforo: { type: integer, minimum: 1, maximum: 100000 }
+        esDePago: { type: boolean }
+        requiereAsiento: { type: boolean }
+        tiposBoleto:
+          type: array
+          items: { $ref: '#/components/schemas/TipoBoletoSolicitud' }
+        secciones:
+          type: array
+          items: { $ref: '#/components/schemas/SeccionSolicitud' }
+        publicar: { type: boolean }
+    TipoBoletoRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string }
+        precio: { $ref: '#/components/schemas/Dinero' }
+        cantidadTotal: { type: integer }
+        disponibles: { type: integer }
+    EventoRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        organizadorId: { type: integer, format: int64 }
+        nombre: { type: string }
+        descripcion: { type: string, nullable: true }
+        lugar: { type: string }
+        direccion: { type: string, nullable: true }
+        ciudad: { type: string }
+        latitud: { type: number, nullable: true }
+        longitud: { type: number, nullable: true }
+        categoriaId: { type: integer, nullable: true }
+        categoria: { type: string, nullable: true }
+        fechaHoraInicio: { type: string, format: date-time }
+        fechaHoraFin: { type: string, format: date-time, nullable: true }
+        esDePago: { type: boolean }
+        requiereAsiento: { type: boolean }
+        aforo: { type: integer }
+        disponibles: { type: integer }
+        precioDesde: { $ref: '#/components/schemas/Dinero' }
+        estado: { $ref: '#/components/schemas/EstadoEvento' }
+        distanciaKm: { type: number, nullable: true }
+        fechaCancelacion: { type: string, format: date-time, nullable: true }
+        motivoCancelacion: { type: string, nullable: true }
+        tiposBoleto:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/TipoBoletoRespuesta' }
+    AsientoRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        seccion: { type: string }
+        fila: { type: string }
+        numero: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoAsiento' }
+        etiqueta: { type: string }
+    ValidadorRespuesta:
+      type: object
+      properties:
+        usuarioId: { type: integer, format: int64 }
+        nombre: { type: string }
+        correo: { type: string }
+    PoliticaCancelacion:
+      type: object
+      properties:
+        permitida: { type: boolean }
+        tipo: { type: string, nullable: true, enum: [BORRADOR, GRATUITO, DE_PAGO_SIN_VENTAS, DE_PAGO_CON_VENTAS, ADMINISTRATIVA] }
+        importeCobrado: { $ref: '#/components/schemas/Dinero' }
+        comision: { $ref: '#/components/schemas/Dinero' }
+        reembolso: { $ref: '#/components/schemas/Dinero' }
+        boletosAfectados: { type: integer }
+        motivoBloqueo: { type: string, nullable: true }
+    CancelacionSolicitud:
+      type: object
+      properties:
+        motivo: { type: string, maxLength: 255 }
+        aceptaComision: { type: boolean }
+    CancelacionRespuesta:
+      type: object
+      properties:
+        eventoId: { type: integer, format: int64 }
+        importeReembolsado: { $ref: '#/components/schemas/Dinero' }
+        comision: { $ref: '#/components/schemas/Dinero' }
+        boletosAnulados: { type: integer }
+        asistentesNotificados: { type: integer }
+        canceladoPor: { type: integer, format: int64 }
+        fechaCancelacion: { type: string, format: date-time }
+    ReporteRespuesta:
+      type: object
+      properties:
+        eventoId: { type: integer, format: int64 }
+        evento: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoEvento' }
+        aforo: { type: integer }
+        disponibles: { type: integer }
+        boletosEmitidos: { type: integer }
+        accesosValidados: { type: integer }
+        accesosRechazados: { type: integer }
+        boletosCancelados: { type: integer }
+        ingresos: { $ref: '#/components/schemas/Dinero' }
+        reembolsado: { $ref: '#/components/schemas/Dinero' }
+        ocupacion: { type: number, description: Porcentaje del aforo }
+        porTipo:
+          type: array
+          items:
+            type: object
+            properties:
+              tipoBoletoId: { type: integer, format: int64 }
+              nombre: { type: string }
+              precio: { $ref: '#/components/schemas/Dinero' }
+              cantidadTotal: { type: integer }
+              disponibles: { type: integer }
+              emitidos: { type: integer }
+              ingresos: { $ref: '#/components/schemas/Dinero' }
+    CrearOrdenSolicitud:
+      type: object
+      required: [eventoId, cantidad, metodo]
+      properties:
+        eventoId: { type: integer, format: int64 }
+        tipoBoletoId: { type: integer, format: int64, nullable: true }
+        cantidad: { type: integer, minimum: 1, maximum: 50 }
+        asientosIds:
+          type: array
+          items: { type: integer, format: int64 }
+        metodoPagoId: { type: integer, format: int64, nullable: true, description: Pendiente (responde 422) }
+        metodo: { type: string, enum: [GRATIS, TARJETA, OXXO, SPEI] }
+        tokenPago: { type: string, nullable: true, description: 'Token de la pasarela; en sandbox tok_aprobado, tok_rechazado, tok_pendiente' }
+    BoletoRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        ordenId: { type: integer, format: int64 }
+        eventoId: { type: integer, format: int64 }
+        tipoBoletoId: { type: integer, format: int64 }
+        asientoId: { type: integer, format: int64, nullable: true }
+        codigo: { type: string }
+        firma: { type: string }
+        contenidoQr: { type: string, description: codigo.firma }
+        estado: { $ref: '#/components/schemas/EstadoBoleto' }
+        fechaEmision: { type: string, format: date-time }
+        fechaUso: { type: string, format: date-time, nullable: true }
+        eventoNombre: { type: string }
+        fechaHoraInicio: { type: string, format: date-time }
+        lugar: { type: string }
+        tipoNombre: { type: string }
+        asientoEtiqueta: { type: string, nullable: true }
+    OrdenRespuesta:
+      type: object
+      properties:
+        ordenId: { type: integer, format: int64 }
+        eventoId: { type: integer, format: int64 }
+        estadoOrden: { $ref: '#/components/schemas/EstadoOrden' }
+        estadoPago:
+          allOf: [ { $ref: '#/components/schemas/EstadoPago' } ]
+          nullable: true
+        total: { $ref: '#/components/schemas/Dinero' }
+        moneda: { type: string, example: MXN }
+        referenciaPago: { type: string, nullable: true }
+        expiraEn: { type: string, format: date-time, nullable: true }
+        mensaje: { type: string }
+        boletos:
+          type: array
+          items: { $ref: '#/components/schemas/BoletoRespuesta' }
+    ValidacionRespuesta:
+      type: object
+      properties:
+        resultado: { type: string, enum: [PERMITIDO, RECHAZADO] }
+        motivo:
+          allOf: [ { $ref: '#/components/schemas/MotivoRechazo' } ]
+          nullable: true
+        mensaje: { type: string }
+        codigo: { type: string, nullable: true }
+        tipoBoleto: { type: string, nullable: true }
+        asiento: { type: string, nullable: true }
+        fechaUso: { type: string, format: date-time, nullable: true }
+    ManifiestoRespuesta:
+      type: object
+      properties:
+        eventoId: { type: integer, format: int64 }
+        evento: { type: string }
+        generadoEn: { type: string, format: date-time }
+        total: { type: integer }
+        boletos:
+          type: array
+          items:
+            type: object
+            properties:
+              codigo: { type: string }
+              firma: { type: string }
+              estado: { $ref: '#/components/schemas/EstadoBoleto' }
+              tipoBoleto: { type: string }
+              asiento: { type: string, nullable: true }
+    SincronizacionSolicitud:
+      type: object
+      required: [eventoId, registros]
+      properties:
+        eventoId: { type: integer, format: int64 }
+        registros:
+          type: array
+          maxItems: 2000
+          items:
+            type: object
+            required: [qr, fechaHora]
+            properties:
+              qr: { type: string }
+              fechaHora: { type: string, format: date-time }
+    SincronizacionRespuesta:
+      type: object
+      properties:
+        procesados: { type: integer }
+        permitidos: { type: integer }
+        rechazados: { type: integer }
+        conflictos: { type: integer }
+        resultados:
+          type: array
+          items:
+            type: object
+            properties:
+              qr: { type: string }
+              fechaHora: { type: string, format: date-time }
+              resultado: { type: string, enum: [PERMITIDO, RECHAZADO] }
+              motivo:
+                allOf: [ { $ref: '#/components/schemas/MotivoRechazo' } ]
+                nullable: true
+              conflicto: { type: boolean }
+              duplicado: { type: boolean }
+    UsuarioAdminRespuesta:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string }
+        correo: { type: string }
+        telefono: { type: string, nullable: true }
+        estado: { $ref: '#/components/schemas/EstadoUsuario' }
+        correoVerificado: { type: boolean }
+        roles: { type: array, items: { type: string } }
+        fechaRegistro: { type: string, format: date-time }
