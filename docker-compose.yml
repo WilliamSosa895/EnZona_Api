@@ -1,0 +1,30 @@
+# Entorno local: PostgreSQL 15 + API. Uso: docker compose --env-file .env up --build
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: enzona
+      POSTGRES_USER: ${DB_USER:-enzona}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-enzona}
+    ports:
+      - "5432:5432"
+    volumes:
+      - enzona-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-enzona} -d enzona"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/enzona
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  enzona-datos:
