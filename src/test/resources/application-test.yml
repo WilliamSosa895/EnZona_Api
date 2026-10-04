@@ -1,0 +1,27 @@
+# Configuración de pruebas de integración. La base de datos la provee Testcontainers
+# (@ServiceConnection); estos valores solo evitan marcadores sin resolver.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/no-se-usa
+    username: prueba
+    password: prueba
+
+enzona:
+  jwt:
+    secreto: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    emisor: enzona-api-pruebas
+    expiracion-minutos: 30
+  boletos:
+    secreto-hmac: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
+  curp:
+    clave-cifrado: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+    clave-indice: Hx4dHBsaGRgXFhUUExIREA8ODQwLCgkIBwYFBAMCAQA=
+  pasarela:
+    proveedor: sandbox
+    secreto-webhook: secreto-webhook-de-pruebas
+  notificaciones:
+    modo: log
+    remitente: pruebas@enzona.mx
+  admin:
+    correo: ""
+    contrasena: ""
