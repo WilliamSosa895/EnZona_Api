@@ -46,17 +46,21 @@ public class AlmacenCloudinary implements AlmacenImagenes {
     private final HttpClient http;
     private final ObjectMapper json;
     private final Clock reloj;
+    /** Con IMAGE_MODERATION=cloudinary la subida pide el add-on de moderación (AWS Rekognition). */
+    private final boolean moderar;
 
     @Autowired
     public AlmacenCloudinary(EnzonaProperties propiedades, ObjectMapper json, Clock reloj) {
-        this(Credenciales.de(propiedades.imagenes().cloudinaryUrl()), HttpClient.newHttpClient(), json, reloj);
+        this(Credenciales.de(propiedades.imagenes().cloudinaryUrl()), HttpClient.newHttpClient(), json, reloj,
+                "cloudinary".equals(propiedades.imagenes().moderacion()));
     }
 
-    AlmacenCloudinary(Credenciales credenciales, HttpClient http, ObjectMapper json, Clock reloj) {
+    AlmacenCloudinary(Credenciales credenciales, HttpClient http, ObjectMapper json, Clock reloj, boolean moderar) {
         this.credenciales = credenciales;
         this.http = http;
         this.json = json;
         this.reloj = reloj;
+        this.moderar = moderar;
     }
 
     /** Partes de {@code cloudinary://api_key:api_secret@cloud_name}. */
@@ -81,8 +85,28 @@ public class AlmacenCloudinary implements AlmacenImagenes {
         parametros.put("public_id", publicId);
         parametros.put("timestamp", String.valueOf(reloj.instant().getEpochSecond()));
         parametros.put("overwrite", "true");
+        if (moderar) {
+            parametros.put("moderation", "aws_rek");
+        }
         JsonNode respuesta = enviar("upload", parametros, datos, tipoMime);
-        return new ImagenGuardada(respuesta.path("public_id").asText(publicId), respuesta.path("secure_url").asText());
+        String id = respuesta.path("public_id").asText(publicId);
+        if (moderar && rechazadaPorModeracion(respuesta)) {
+            // La imagen existió unos milisegundos en Cloudinary, pero nunca se publica: se borra y se rechaza
+            eliminar(id);
+            throw new ApiException(ErrorCodigo.IMAGEN_NO_PERMITIDA, "La imagen no cumple las normas de la comunidad");
+        }
+        return new ImagenGuardada(id, respuesta.path("secure_url").asText());
+    }
+
+    /** El add-on responde {@code moderation: [{kind: "aws_rek", status: "approved"|"rejected"|"pending"}]}. */
+    static boolean rechazadaPorModeracion(JsonNode respuesta) {
+        for (JsonNode moderacion : respuesta.path("moderation")) {
+            String estado = moderacion.path("status").asText("");
+            if (!"approved".equals(estado)) {
+                return true;    // rechazada o pendiente: no se publica sin aprobación
+            }
+        }
+        return false;
     }
 
     @Override

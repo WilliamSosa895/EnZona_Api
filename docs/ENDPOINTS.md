@@ -127,10 +127,10 @@ Publica un borrador. Exige coordenadas y fecha futura.
 - **Errores:** 409 `ESTADO_INVALIDO` · 422
 
 ### POST `/api/eventos/{id}/imagen` 🔐 [ORGANIZADOR dueño o ADMIN]
-Sube o reemplaza la portada del evento. Cuerpo `multipart/form-data` con el campo `imagen` (JPEG, PNG o WebP, hasta `IMAGE_MAX_MB`). La API valida el tipo por su contenido, guarda el archivo en el almacén configurado (`IMAGE_PROVIDER=local` o `cloudinary`) y borra la portada anterior. El cliente nunca recibe credenciales del almacén.
+Sube o reemplaza la portada del evento. Cuerpo `multipart/form-data` con el campo `imagen` (JPEG, PNG o WebP, hasta `IMAGE_MAX_MB`). La API valida el tipo por su contenido, guarda el archivo en el almacén configurado (`IMAGE_PROVIDER=local` o `cloudinary`) y borra la portada anterior. Antes de guardarla la pasa por el servicio de moderación configurado (`IMAGE_MODERATION`): una imagen rechazada nunca se almacena ni se publica. El cliente nunca recibe credenciales del almacén ni del moderador.
 
 - **200:** `EventoRespuesta` con `imagenUrl` (absoluta en Cloudinary; relativa `/api/imagenes/…` con el almacén local)
-- **Errores:** 403 · 404 · 409 `ESTADO_INVALIDO` (evento cancelado o realizado) · 422 `REGLA_NEGOCIO` (tipo o tamaño) · 503 `SERVICIO_EXTERNO_NO_DISPONIBLE`
+- **Errores:** 403 · 404 · 409 `ESTADO_INVALIDO` (evento cancelado o realizado) · 422 `REGLA_NEGOCIO` (tipo o tamaño) · 422 `IMAGEN_NO_PERMITIDA` (desnudez, contenido sexual, violencia gráfica o autolesiones según `IMAGE_MODERATION`) · 503 `SERVICIO_EXTERNO_NO_DISPONIBLE`
 
 ### DELETE `/api/eventos/{id}/imagen` 🔐 [ORGANIZADOR dueño o ADMIN]
 Quita la portada. **200:** `EventoRespuesta` con `imagenUrl: null`.

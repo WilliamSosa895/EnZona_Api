@@ -30,14 +30,16 @@ public class ImagenEventoService {
     private static final Set<String> TIPOS_PERMITIDOS = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final AlmacenImagenes almacen;
+    private final ModeradorImagenes moderador;
     private final AccesoEventos acceso;
     private final TipoBoletoRepository tipos;
     private final EventoMapper mapper;
     private final EnzonaProperties propiedades;
 
-    public ImagenEventoService(AlmacenImagenes almacen, AccesoEventos acceso, TipoBoletoRepository tipos,
-            EventoMapper mapper, EnzonaProperties propiedades) {
+    public ImagenEventoService(AlmacenImagenes almacen, ModeradorImagenes moderador, AccesoEventos acceso,
+            TipoBoletoRepository tipos, EventoMapper mapper, EnzonaProperties propiedades) {
         this.almacen = almacen;
+        this.moderador = moderador;
         this.acceso = acceso;
         this.tipos = tipos;
         this.mapper = mapper;
@@ -50,6 +52,12 @@ public class ImagenEventoService {
         Evento evento = acceso.bloquearGestionable(eventoId, usuarioId, esAdmin, true);
         if (!evento.esModificable()) {
             throw new ApiException(ErrorCodigo.ESTADO_INVALIDO, "Un evento " + evento.getEstado() + " no se modifica");
+        }
+        // Moderación ANTES de guardar: una imagen rechazada nunca llega al almacén ni a los asistentes
+        ModeradorImagenes.Veredicto veredicto = moderador.moderar(datos, archivo.getContentType());
+        if (!veredicto.permitida()) {
+            log.info("Portada rechazada por moderación en el evento {}: {}", eventoId, veredicto.motivo());
+            throw new ApiException(ErrorCodigo.IMAGEN_NO_PERMITIDA, veredicto.motivo());
         }
         String anterior = evento.getImagenId();
         AlmacenImagenes.ImagenGuardada guardada = almacen.guardar(datos, archivo.getContentType(), "eventos/" + eventoId);

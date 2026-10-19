@@ -52,6 +52,9 @@ Si falta alguna, la aplicación no arranca: es intencional, para no operar con c
 | `IMAGE_LOCAL_DIR` | `./imagenes` | Carpeta de las portadas con el almacén local. |
 | `IMAGE_MAX_MB` | `5` | Tamaño máximo de una portada. |
 | `CLOUDINARY_URL` | vacío | `cloudinary://api_key:api_secret@cloud_name` (obligatoria con `IMAGE_PROVIDER=cloudinary`). Solo vive en el servidor. |
+| `IMAGE_MODERATION` | `off` | Moderación de portadas antes de guardarlas: `off` (solo desarrollo; se registra una advertencia), `sightengine` o `cloudinary` (add-on AWS Rekognition en la misma subida). |
+| `SIGHTENGINE_USER`, `SIGHTENGINE_SECRET` | vacío | Credenciales de Sightengine (obligatorias con `IMAGE_MODERATION=sightengine`). Solo viven en el servidor. |
+| `IMAGE_MODERATION_THRESHOLD` | `0.7` | Probabilidad (0 a 1) a partir de la cual se rechaza la imagen. |
 | `CORS_ORIGINS` | `http://localhost:5173` | Orígenes permitidos de la aplicación web, separados por coma. |
 | `SWAGGER_ENABLED` | `false` | Habilita Swagger UI en el perfil `prod`. |
 

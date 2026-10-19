@@ -9,6 +9,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
   `POST`/`DELETE /api/eventos/{id}/imagen` (multipart, solo organizador dueño o administrador, JPEG/PNG/WebP validados
   por contenido) y almacén intercambiable: `local` (archivos servidos en `/api/imagenes`) o `cloudinary`
   (subida firmada desde el servidor con `CLOUDINARY_URL`).
+- **Moderación de portadas** antes de guardarlas (`IMAGE_MODERATION`): Sightengine o add-on de Cloudinary; rechazo
+  `422 IMAGEN_NO_PERMITIDA` para desnudez, contenido sexual, violencia gráfica y autolesiones.
 
 ## [0.1.0] - 2026-10-04
 
