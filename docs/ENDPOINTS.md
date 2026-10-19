@@ -126,6 +126,18 @@ Publica un borrador. Exige coordenadas y fecha futura.
 - **200:** `EventoRespuesta`
 - **Errores:** 409 `ESTADO_INVALIDO` · 422
 
+### POST `/api/eventos/{id}/imagen` 🔐 [ORGANIZADOR dueño o ADMIN]
+Sube o reemplaza la portada del evento. Cuerpo `multipart/form-data` con el campo `imagen` (JPEG, PNG o WebP, hasta `IMAGE_MAX_MB`). La API valida el tipo por su contenido, guarda el archivo en el almacén configurado (`IMAGE_PROVIDER=local` o `cloudinary`) y borra la portada anterior. El cliente nunca recibe credenciales del almacén.
+
+- **200:** `EventoRespuesta` con `imagenUrl` (absoluta en Cloudinary; relativa `/api/imagenes/…` con el almacén local)
+- **Errores:** 403 · 404 · 409 `ESTADO_INVALIDO` (evento cancelado o realizado) · 422 `REGLA_NEGOCIO` (tipo o tamaño) · 503 `SERVICIO_EXTERNO_NO_DISPONIBLE`
+
+### DELETE `/api/eventos/{id}/imagen` 🔐 [ORGANIZADOR dueño o ADMIN]
+Quita la portada. **200:** `EventoRespuesta` con `imagenUrl: null`.
+
+### GET `/api/imagenes/{archivo}` 🔓
+Solo con `IMAGE_PROVIDER=local`: sirve la portada guardada en el servidor (caché de 7 días).
+
 ### GET `/api/eventos/{id}/asientos` 🔐
 Mapa de asientos (RF-09): `[{ id, seccion, fila, numero, estado, etiqueta }]`, con `estado` DISPONIBLE, RESERVADO u OCUPADO.
 

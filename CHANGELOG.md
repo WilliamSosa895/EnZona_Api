@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Agregado
+- **Portada de eventos:** migración V6 (`evento.imagen_url`, `evento.imagen_id`), `imagenUrl` en `EventoRespuesta`,
+  `POST`/`DELETE /api/eventos/{id}/imagen` (multipart, solo organizador dueño o administrador, JPEG/PNG/WebP validados
+  por contenido) y almacén intercambiable: `local` (archivos servidos en `/api/imagenes`) o `cloudinary`
+  (subida firmada desde el servidor con `CLOUDINARY_URL`).
+
 ## [0.1.0] - 2026-10-04
 
 Primera versión de la API, que cubre los incrementos 0 a 6 del plan de desarrollo.

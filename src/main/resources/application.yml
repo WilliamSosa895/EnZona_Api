@@ -33,6 +33,11 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      # Portadas de eventos (enzona.imagenes.maximo-mb valida el tamaño con un mensaje claro)
+      max-file-size: 21MB
+      max-request-size: 22MB
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:587}
@@ -96,6 +101,12 @@ enzona:
   eventos:
     horas-duracion-por-defecto: ${EVENT_DEFAULT_DURATION_HOURS:6}
     radio-maximo-km: ${EVENT_MAX_RADIUS_KM:50}
+  imagenes:
+    # local (archivos en carpeta-local, servidos en /api/imagenes) | cloudinary (requiere CLOUDINARY_URL)
+    proveedor: ${IMAGE_PROVIDER:local}
+    cloudinary-url: ${CLOUDINARY_URL:}
+    carpeta-local: ${IMAGE_LOCAL_DIR:./imagenes}
+    maximo-mb: ${IMAGE_MAX_MB:5}
   admin:
     nombre: ${ADMIN_NAME:Administrador EnZona}
     correo: ${ADMIN_EMAIL:}
