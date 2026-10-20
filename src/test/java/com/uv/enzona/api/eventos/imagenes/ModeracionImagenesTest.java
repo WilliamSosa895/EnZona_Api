@@ -33,6 +33,14 @@ class ModeracionImagenesTest {
     private final ObjectMapper json = new ObjectMapper();
 
     @Test
+    void laModeracionDeCloudinarySoloArrancaConElAlmacenDeCloudinary() {
+        assertThat(new ModeradorCloudinary("cloudinary").moderar(PNG, "image/png").permitida()).isTrue();
+        assertThatThrownBy(() -> new ModeradorCloudinary("local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("IMAGE_PROVIDER=cloudinary");
+    }
+
+    @Test
     void sightengineRechazaDesnudezGoreViolenciaYAutolesion() throws Exception {
         double umbral = 0.7;
         assertThat(ModeradorSightengine.evaluar(json.readTree(
