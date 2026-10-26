@@ -89,6 +89,21 @@ Comprueba las cifras vigentes en <https://resend.com/pricing>. Consecuencias par
 - En la API, los fallos aparecen como `ERROR No se pudo enviar el correo "..."` con la excepción completa; en el perfil `dev` la bitácora de `com.uv.enzona` está en `DEBUG`.
 - Prueba de extremo a extremo: registra una cuenta en la app con tu correo y escribe el código recibido; compra un boleto y comprueba que el QR se ve incrustado en el cuerpo (Gmail y Outlook lo muestran en línea; algunos clientes lo presentan como adjunto, y el boleto siempre está en la app).
 
+## Otros proveedores SMTP (mientras no haya dominio verificado)
+
+La API no depende de Resend: `NOTIFICATIONS_MODE=smtp` funciona con cualquier servidor SMTP.
+Mientras no se verifique un dominio, estas opciones entregan correo a cualquier destinatario
+con las mismas variables (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`):
+
+| Proveedor | Costo | Host y puerto | Usuario | Contraseña | Remitente (`MAIL_FROM`) | Notas |
+|---|---|---|---|---|---|---|
+| Gmail con contraseña de aplicación | Gratis, ~500 destinatarios/día | `smtp.gmail.com` · 587 (STARTTLS) | la cuenta de Gmail | contraseña de aplicación de 16 letras (requiere verificación en dos pasos) | la misma cuenta de Gmail | La más sencilla y con mejor entrega a Gmail; Google firma los correos. No sirve para volumen alto. |
+| Brevo (antes Sendinblue) | Gratis, 300/día | `smtp-relay.brevo.com` · 587 (STARTTLS) o 465 (`MAIL_SSL=true`) | correo con el que se entró a Brevo | **clave SMTP** (no la clave de API), en SMTP & API → SMTP | un remitente verificado en Brevo | Permite verificar un solo remitente sin dominio. Un remitente `@gmail.com` reenviado por Brevo puede caer en no deseados en Gmail (no lo firma Google). |
+| SendGrid | Solo prueba de 60 días (100/día); después de pago | `smtp.sendgrid.net` · 587 | literalmente `apikey` | la API key | remitente verificado (Single Sender) | El plan gratuito permanente se retiró en mayo de 2025. |
+| Resend con dominio verificado | Gratis, 100/día y 3 000/mes | `smtp.resend.com` · 587 | `resend` | `RESEND_API_KEY` | `no-reply@<dominio verificado>` | La opción recomendada en cuanto exista el dominio (ver secciones anteriores). |
+
+Al cambiar de proveedor basta editar el `.env` y reiniciar la API; no se toca código ni la app.
+
 ## 7. Problemas frecuentes
 
 | Síntoma | Causa | Qué hacer |
