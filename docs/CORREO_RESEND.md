@@ -98,7 +98,7 @@ con las mismas variables (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSW
 | Proveedor | Costo | Host y puerto | Usuario | Contraseña | Remitente (`MAIL_FROM`) | Notas |
 |---|---|---|---|---|---|---|
 | Gmail con contraseña de aplicación | Gratis, ~500 destinatarios/día | `smtp.gmail.com` · 587 (STARTTLS) | la cuenta de Gmail | contraseña de aplicación de 16 letras (requiere verificación en dos pasos) | la misma cuenta de Gmail | La más sencilla y con mejor entrega a Gmail; Google firma los correos. No sirve para volumen alto. |
-| Brevo (antes Sendinblue) | Gratis, 300/día | `smtp-relay.brevo.com` · 587 (STARTTLS) o 465 (`MAIL_SSL=true`) | el **Login** que muestra SMTP & API → SMTP (una dirección generada tipo , no el correo con el que se entró; con el correo da ) | **clave SMTP** (no la clave de API), en SMTP & API → SMTP | un remitente verificado en Brevo | Permite verificar un solo remitente sin dominio. Un remitente `@gmail.com` reenviado por Brevo puede caer en no deseados en Gmail (no lo firma Google). |
+| Brevo (antes Sendinblue) | Gratis, 300/día | `smtp-relay.brevo.com` · 587 (STARTTLS) o 465 (`MAIL_SSL=true`) | el **Login** que muestra SMTP & API → SMTP (una dirección generada tipo `c0140xxxx@smtp-brevo.com`, no el correo con el que se entró; con el correo da `535 Authentication failed`) | **clave SMTP** (no la clave de API), en SMTP & API → SMTP | un remitente verificado en Brevo | Permite verificar un solo remitente sin dominio. Un remitente `@gmail.com` reenviado por Brevo puede caer en no deseados en Gmail (no lo firma Google). |
 | SendGrid | Solo prueba de 60 días (100/día); después de pago | `smtp.sendgrid.net` · 587 | literalmente `apikey` | la API key | remitente verificado (Single Sender) | El plan gratuito permanente se retiró en mayo de 2025. |
 | Resend con dominio verificado | Gratis, 100/día y 3 000/mes | `smtp.resend.com` · 587 | `resend` | `RESEND_API_KEY` | `no-reply@<dominio verificado>` | La opción recomendada en cuanto exista el dominio (ver secciones anteriores). |
 
@@ -108,7 +108,7 @@ Al cambiar de proveedor basta editar el `.env` y reiniciar la API; no se toca c�
 
 | Síntoma | Causa | Qué hacer |
 |---|---|---|
-|  con Brevo |  es el correo de la cuenta en vez del Login generado , o se pegó la clave de API en lugar de la clave SMTP () | Copiar el Login y la clave de la pestaña SMTP & API → SMTP. Brevo reescribe el remitente Gmail como : es normal mientras no haya dominio propio |
+| `535 5.7.8 Authentication failed` con Brevo | `MAIL_USERNAME` es el correo de la cuenta en vez del Login generado `…@smtp-brevo.com`, o se pegó la clave de API en lugar de la clave SMTP (`xsmtpsib-…`) | Copiar el Login y la clave de la pestaña SMTP & API → SMTP. Brevo reescribe el remitente Gmail como `usuario@<id>.brevosend.com`: es normal mientras no haya dominio propio |
 | La API no arranca con `NOTIFICATIONS_MODE=smtp requiere MAIL_PASSWORD o RESEND_API_KEY` | Falta la clave, o `MAIL_PASSWORD` está definida pero vacía y anula a `RESEND_API_KEY` | Define `RESEND_API_KEY` (o `MAIL_PASSWORD`) en `.env`; si usas `RESEND_API_KEY`, no definas `MAIL_PASSWORD` vacía. |
 | La API no arranca con `NOTIFICATIONS_MODE=smtp con MAIL_SMTP_AUTH=true requiere MAIL_USERNAME` | Servidor remoto con autenticación (por defecto) y `MAIL_USERNAME` vacío | Con Resend, `MAIL_USERNAME=resend`; con un relay que no pide usuario, `MAIL_SMTP_AUTH=false`. |
 | `535 Authentication failed` o `Invalid API key` | Clave incorrecta, revocada o sin permiso de envío | Crea otra clave con *Sending access* y actualiza `.env`. |
