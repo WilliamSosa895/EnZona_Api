@@ -48,6 +48,13 @@ Si falta alguna, la aplicación no arranca: es intencional, para no operar con c
 | `EVENT_DEFAULT_DURATION_HOURS` | `6` | Horas tras el inicio en que un evento sin hora de fin se considera terminado. |
 | `EVENT_MAX_RADIUS_KM` | `50` | Radio máximo de la búsqueda por cercanía. |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | vacío | Si se definen, se crea la cuenta de administrador al arrancar (solo si no existe). |
+| `IMAGE_PROVIDER` | `local` | Almacén de las portadas de eventos: `local` (archivos en `IMAGE_LOCAL_DIR`, servidos en `/api/imagenes`) o `cloudinary`. |
+| `IMAGE_LOCAL_DIR` | `./imagenes` | Carpeta de las portadas con el almacén local. |
+| `IMAGE_MAX_MB` | `5` | Tamaño máximo de una portada. |
+| `CLOUDINARY_URL` | vacío | `cloudinary://api_key:api_secret@cloud_name` (obligatoria con `IMAGE_PROVIDER=cloudinary`). Solo vive en el servidor. |
+| `IMAGE_MODERATION` | `off` | Moderación de portadas antes de guardarlas: `off` (solo desarrollo; se registra una advertencia), `sightengine` o `cloudinary` (add-on AWS Rekognition en la misma subida; exige `IMAGE_PROVIDER=cloudinary` y tener activado el add-on «Amazon Rekognition AI Moderation» en la cuenta, si no la subida falla). |
+| `SIGHTENGINE_USER`, `SIGHTENGINE_SECRET` | vacío | Credenciales de Sightengine (obligatorias con `IMAGE_MODERATION=sightengine`). Solo viven en el servidor. |
+| `IMAGE_MODERATION_THRESHOLD` | `0.7` | Probabilidad (0 a 1) a partir de la cual se rechaza la imagen. |
 | `CORS_ORIGINS` | `http://localhost:5173` | Orígenes permitidos de la aplicación web, separados por coma. |
 | `SWAGGER_ENABLED` | `false` | Habilita Swagger UI en el perfil `prod`. |
 

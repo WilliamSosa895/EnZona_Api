@@ -37,7 +37,8 @@ public class SecurityConfig {
                 .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rutas -> rutas
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/{id:\\d+}", "/api/categorias")
+                        .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/{id:\\d+}", "/api/categorias",
+                                "/api/imagenes/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/pagos/webhook").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health")
