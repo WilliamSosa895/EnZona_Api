@@ -37,10 +37,18 @@ spring:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    # La clave de Resend puede darse como RESEND_API_KEY; solo se usa si MAIL_PASSWORD no está definida (vacía también la anula).
+    password: ${MAIL_PASSWORD:${RESEND_API_KEY:}}
     properties:
       mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
       mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+      # Con Resend: STARTTLS obligatorio en 587/2587 (la clave nunca viaja en claro) o TLS implícito (MAIL_SSL=true) en 465/2465.
+      mail.smtp.starttls.required: ${MAIL_STARTTLS_REQUIRED:true}
+      mail.smtp.ssl.enable: ${MAIL_SSL:false}
+      # Tiempos de espera en milisegundos: sin ellos una conexión colgada bloquearía el envío para siempre.
+      mail.smtp.connectiontimeout: ${MAIL_CONNECTION_TIMEOUT_MS:5000}
+      mail.smtp.timeout: ${MAIL_TIMEOUT_MS:10000}
+      mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT_MS:10000}
   threads:
     virtual:
       enabled: true
@@ -59,6 +67,10 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      # Apagado: /actuator/health no depende del proveedor de correo (encendido, cada sonda abre una sesión SMTP).
+      enabled: ${MAIL_HEALTH_ENABLED:false}
 
 springdoc:
   api-docs:
