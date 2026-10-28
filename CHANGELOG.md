@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Agregado
+- **Activar una cuenta sin código:** `POST /api/admin/usuarios/{id}/verificacion` [ADMIN] da por verificada una
+  cuenta PENDIENTE cuando el correo de verificación no llegó; solo aplica a cuentas PENDIENTE (422 en otro estado).
+
 ## [0.1.0] - 2026-10-04
 
 Primera versión de la API, que cubre los incrementos 0 a 6 del plan de desarrollo.

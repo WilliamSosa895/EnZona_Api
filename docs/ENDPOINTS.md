@@ -248,6 +248,7 @@ Cuerpo: `{ eventoId, registros[{ qr, fechaHora }] }`, hasta 2000 escaneos hechos
 |---|---|
 | GET `/api/admin/usuarios?estado=&q=&page=&size=` | Cuentas, filtradas por estado o por texto en nombre o correo. Paginado: `[{ id, nombre, correo, telefono, estado, correoVerificado, roles[], fechaRegistro }]` |
 | PATCH `/api/admin/usuarios/{id}/estado` | Cuerpo `{ estado: ACTIVO | BLOQUEADO }`. El bloqueo aplica de inmediato, incluso con tokens vigentes. No se puede cambiar la propia cuenta (422) |
+| POST `/api/admin/usuarios/{id}/verificacion` | Da por verificada una cuenta PENDIENTE sin código (cuando el correo de verificación no llegó) y la activa. Solo cuentas PENDIENTE (422 en otro estado). Devuelve la cuenta |
 | GET `/api/admin/eventos?estado=&page=&size=` | Eventos en cualquier estado. Paginado |
 
 ## 7. Operación
