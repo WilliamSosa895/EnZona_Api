@@ -567,6 +567,20 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/UsuarioAdminRespuesta' }
         '422': { $ref: '#/components/responses/ReglaNegocio' }
+  /api/admin/usuarios/{id}/verificacion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Administración]
+      summary: Da por verificada una cuenta PENDIENTE sin código y la activa [ADMIN]
+      description: Para cuando el correo de verificación no llegó. Solo aplica a cuentas PENDIENTE.
+      responses:
+        '200':
+          description: Cuenta activada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioAdminRespuesta' }
+        '422': { $ref: '#/components/responses/ReglaNegocio' }
   /api/admin/eventos:
     get:
       tags: [Administración]

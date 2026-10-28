@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +49,12 @@ public class AdministracionController {
     @Operation(summary = "Bloquea o reactiva una cuenta; el bloqueo aplica de inmediato (CP-46)")
     public UsuarioAdminRespuesta cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoSolicitud solicitud) {
         return administracion.cambiarEstado(id, solicitud.estado(), usuarioActual.id());
+    }
+
+    @PostMapping("/usuarios/{id}/verificacion")
+    @Operation(summary = "Da por verificada una cuenta PENDIENTE sin código (cuando el correo no llegó) y la activa")
+    public UsuarioAdminRespuesta darPorVerificada(@PathVariable Long id) {
+        return administracion.darPorVerificada(id);
     }
 
     @GetMapping("/eventos")
