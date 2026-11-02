@@ -128,6 +128,7 @@ Decisiones clave:
 | [docs/CODIGOS_DE_ERROR.md](docs/CODIGOS_DE_ERROR.md) | Formato de error y significado de cada código |
 | [docs/openapi.yaml](docs/openapi.yaml) | Especificación OpenAPI 3 |
 | [docs/COHERENCIA_APP_MOVIL.md](docs/COHERENCIA_APP_MOVIL.md) | Alineación con la app Android y pendientes |
+| [docs/CORREO_RESEND.md](docs/CORREO_RESEND.md) | Correo con Resend: cuenta, API key, dominio verificado, límites y comprobación |
 | [CHANGELOG.md](CHANGELOG.md) | Historial de versiones |
 
 ## Flujo de trabajo
