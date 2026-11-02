@@ -1,6 +1,8 @@
 package com.uv.enzona.api.comun.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,8 +27,20 @@ public record EnzonaProperties(
         @Valid @NotNull Pasarela pasarela,
         @Valid @NotNull Notificaciones notificaciones,
         @Valid @NotNull Eventos eventos,
+        @Valid @NotNull Imagenes imagenes,
         @Valid Admin admin,
         @Valid Cors cors) {
+    /**
+     * Portadas de los eventos. {@code proveedor=local} guarda los archivos en {@code carpetaLocal}
+     * y la API los sirve en /api/imagenes; {@code proveedor=cloudinary} las sube a Cloudinary con
+     * {@code cloudinaryUrl} (cloudinary://api_key:api_secret@cloud_name), que nunca sale del servidor.
+     */
+    public record Imagenes(@NotBlank String proveedor, String cloudinaryUrl, @NotBlank String carpetaLocal,
+            @Min(1) @Max(20) int maximoMb,
+            /** off | sightengine | cloudinary (add-on de moderación en la misma subida). */
+            @NotBlank String moderacion, String sightengineUsuario, String sightengineSecreto,
+            /** Probabilidad (0 a 1) a partir de la cual se rechaza la imagen. */
+            @DecimalMin("0.1") @DecimalMax("1.0") double umbralModeracion) { }
 
     /** Firma de los JWT (HS256). El secreto va en Base64 y debe tener al menos 32 bytes. */
     public record Jwt(@NotBlank String secreto, @NotBlank String emisor, @Min(5) @Max(1440) long expiracionMinutos) { }

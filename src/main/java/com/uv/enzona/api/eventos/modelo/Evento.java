@@ -87,7 +87,39 @@ public class Evento {
     @Column(name = "motivo_cancelacion", length = 255)
     private String motivoCancelacion;
 
+    /** URL pública de la portada; null si el evento no tiene imagen. */
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
+    /** Identificador de la imagen en el almacén (para reemplazarla o borrarla). */
+    @Column(name = "imagen_id", length = 200)
+    private String imagenId;
+
     protected Evento() {
+    }
+
+    // ------------------------------------------------------------------ imagen de portada
+
+    public void asignarImagen(String url, String id) {
+        this.imagenUrl = url;
+        this.imagenId = id;
+    }
+
+    public void quitarImagen() {
+        this.imagenUrl = null;
+        this.imagenId = null;
+    }
+
+    public boolean tieneImagen() {
+        return imagenId != null;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public String getImagenId() {
+        return imagenId;
     }
 
     public static Evento crear(Long organizadorId, DatosEvento datos, OffsetDateTime ahora) {

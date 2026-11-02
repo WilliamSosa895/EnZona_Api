@@ -74,6 +74,7 @@ Los errores internos nunca exponen detalles técnicos (trazas, SQL): solo se reg
 | `ROL_EN_USO` | 409 | Quitar el rol de organizador con eventos vigentes, o si es su único rol. | Explicar la causa. |
 | `CONFLICTO_DE_DATOS` | 409 | Una restricción de la base de datos rechazó la operación (red de seguridad). | Reintentar o recargar. |
 | `REGLA_NEGOCIO` | 422 | Regla de negocio incumplida (ver `detail`). | Mostrar el mensaje. |
+| `IMAGEN_NO_PERMITIDA` | 422 | La portada contiene desnudez, contenido sexual, violencia gráfica o autolesiones (moderación en el servidor). | Mostrar el `detail` y pedir otra imagen. |
 | `MOTIVO_REQUERIDO` | 422 | Un administrador cancela sin indicar el motivo. | Pedir el motivo. |
 | `METODO_PAGO_NO_SOPORTADO` | 422 | OXXO, SPEI o método guardado (pendientes). | Ofrecer pago con tarjeta. |
 | `DEMASIADOS_INTENTOS` | 429 | Sesión bloqueada temporalmente o código agotado. | Pedir que espere o solicite otro código. |
