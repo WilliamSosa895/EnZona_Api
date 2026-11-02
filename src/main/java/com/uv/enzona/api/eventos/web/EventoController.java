@@ -3,6 +3,7 @@ package com.uv.enzona.api.eventos.web;
 import com.uv.enzona.api.comun.config.OpenApiConfig;
 import com.uv.enzona.api.comun.seguridad.UsuarioActual;
 import com.uv.enzona.api.comun.web.Paginacion;
+import com.uv.enzona.api.eventos.imagenes.ImagenEventoService;
 import com.uv.enzona.api.eventos.servicio.AsientosService;
 import com.uv.enzona.api.eventos.servicio.ConsultaEventosService;
 import com.uv.enzona.api.eventos.servicio.FiltroEventos;
@@ -25,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -36,8 +38,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @Validated
@@ -49,14 +53,16 @@ public class EventoController {
     private final GestionEventosService gestion;
     private final AsientosService asientos;
     private final ValidadoresEventoService validadores;
+    private final ImagenEventoService imagenes;
     private final UsuarioActual usuarioActual;
 
     public EventoController(ConsultaEventosService consulta, GestionEventosService gestion, AsientosService asientos,
-            ValidadoresEventoService validadores, UsuarioActual usuarioActual) {
+            ValidadoresEventoService validadores, ImagenEventoService imagenes, UsuarioActual usuarioActual) {
         this.consulta = consulta;
         this.gestion = gestion;
         this.asientos = asientos;
         this.validadores = validadores;
+        this.imagenes = imagenes;
         this.usuarioActual = usuarioActual;
     }
 
@@ -110,6 +116,24 @@ public class EventoController {
     @Operation(summary = "Publica un evento en borrador (exige coordenadas y fecha futura)")
     public EventoRespuesta publicar(@PathVariable Long id) {
         return gestion.publicar(id, usuarioActual.id());
+    }
+
+    @PostMapping(value = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ORGANIZADOR','ADMIN')")
+    @SecurityRequirement(name = OpenApiConfig.ESQUEMA_SEGURIDAD)
+    @Operation(summary = "Sube o reemplaza la portada del evento (JPEG, PNG o WebP; campo multipart \"imagen\")",
+            description = "La API guarda la imagen en el almacén configurado (local o Cloudinary) y devuelve el evento "
+                    + "con su imagenUrl. El cliente nunca recibe credenciales del almacén.")
+    public EventoRespuesta subirImagen(@PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
+        return imagenes.asignar(id, usuarioActual.id(), usuarioActual.esAdmin(), imagen);
+    }
+
+    @DeleteMapping("/{id}/imagen")
+    @PreAuthorize("hasAnyRole('ORGANIZADOR','ADMIN')")
+    @SecurityRequirement(name = OpenApiConfig.ESQUEMA_SEGURIDAD)
+    @Operation(summary = "Quita la portada del evento")
+    public EventoRespuesta quitarImagen(@PathVariable Long id) {
+        return imagenes.quitar(id, usuarioActual.id(), usuarioActual.esAdmin());
     }
 
     @GetMapping("/{id}/asientos")

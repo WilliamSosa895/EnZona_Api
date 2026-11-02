@@ -44,6 +44,7 @@ public enum ErrorCodigo {
     REGLA_NEGOCIO(HttpStatus.UNPROCESSABLE_ENTITY, "La solicitud no cumple una regla de negocio"),
     MOTIVO_REQUERIDO(HttpStatus.UNPROCESSABLE_ENTITY, "Se requiere el motivo de la cancelación"),
     METODO_PAGO_NO_SOPORTADO(HttpStatus.UNPROCESSABLE_ENTITY, "El método de pago aún no está disponible"),
+    IMAGEN_NO_PERMITIDA(HttpStatus.UNPROCESSABLE_ENTITY, "La imagen no cumple las normas de la comunidad"),
 
     // 429 — demasiados intentos
     DEMASIADOS_INTENTOS(HttpStatus.TOO_MANY_REQUESTS, "Demasiados intentos; espera e intenta de nuevo"),
