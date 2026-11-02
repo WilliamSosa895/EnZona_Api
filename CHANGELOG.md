@@ -11,6 +11,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
   (subida firmada desde el servidor con `CLOUDINARY_URL`).
 - **Moderación de portadas** antes de guardarlas (`IMAGE_MODERATION`): Sightengine o add-on de Cloudinary; rechazo
   `422 IMAGEN_NO_PERMITIDA` para desnudez, contenido sexual, violencia gráfica y autolesiones.
+- **Activar una cuenta sin código:** `POST /api/admin/usuarios/{id}/verificacion` [ADMIN] da por verificada una
+  cuenta PENDIENTE cuando el correo de verificación no llegó; solo aplica a cuentas PENDIENTE (422 en otro estado).
 
 ## [0.1.0] - 2026-10-04
 

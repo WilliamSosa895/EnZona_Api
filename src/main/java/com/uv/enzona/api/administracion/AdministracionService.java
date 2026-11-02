@@ -63,6 +63,21 @@ public class AdministracionService {
         return UsuarioAdminRespuesta.de(usuario);
     }
 
+    /**
+     * Da por verificada una cuenta PENDIENTE sin pasar por el código: para cuando el correo
+     * no llegó (proveedor sin dominio, buzón lleno) y la persona no puede terminar el registro.
+     */
+    @Transactional
+    public UsuarioAdminRespuesta darPorVerificada(Long usuarioId) {
+        Usuario usuario = usuarios.findById(usuarioId).orElseThrow(() -> ApiException.noEncontrado("Usuario", usuarioId));
+        if (usuario.getEstado() != EstadoUsuario.PENDIENTE) {
+            throw ApiException.reglaNegocio("Solo se puede dar por verificada una cuenta PENDIENTE; esta está "
+                    + usuario.getEstado());
+        }
+        usuario.activarVerificada();
+        return UsuarioAdminRespuesta.de(usuario);
+    }
+
     @Transactional(readOnly = true)
     public Page<EventoRespuesta> eventos(EstadoEvento estado, int pagina, int tamano) {
         Specification<Evento> criterio = (raiz, consulta, cb) -> estado == null
