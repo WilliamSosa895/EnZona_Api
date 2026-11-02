@@ -32,5 +32,7 @@ public record EventoRespuesta(
         @Schema(description = "Solo si la búsqueda incluyó lat y lng") Double distanciaKm,
         OffsetDateTime fechaCancelacion,
         String motivoCancelacion,
-        @Schema(description = "Solo en el detalle del evento") List<TipoBoletoRespuesta> tiposBoleto) {
+        @Schema(description = "Solo en el detalle del evento") List<TipoBoletoRespuesta> tiposBoleto,
+        @Schema(description = "URL pública de la portada; null si no tiene. Relativa (/api/imagenes/…) con el almacén local")
+        String imagenUrl) {
 }

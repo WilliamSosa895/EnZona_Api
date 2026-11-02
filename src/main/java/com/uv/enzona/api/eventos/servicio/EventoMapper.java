@@ -83,6 +83,7 @@ public class EventoMapper {
                 distanciaKm == null ? null : Math.round(distanciaKm * 100.0) / 100.0,
                 Fechas.enZonaMx(e.getFechaCancelacion()),
                 e.getMotivoCancelacion(),
-                tiposRespuesta);
+                tiposRespuesta,
+                e.getImagenUrl());
     }
 }
