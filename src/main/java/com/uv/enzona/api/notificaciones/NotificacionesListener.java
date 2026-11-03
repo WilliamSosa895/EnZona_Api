@@ -8,6 +8,7 @@ import com.uv.enzona.api.boletaje.servicio.BoletosEmitidos;
 import com.uv.enzona.api.boletaje.web.dto.BoletoRespuesta;
 import com.uv.enzona.api.cancelacion.EventoCancelado;
 import com.uv.enzona.api.eventos.servicio.EventoModificado;
+import com.uv.enzona.api.identidad.modelo.PropositoCodigo;
 import com.uv.enzona.api.identidad.modelo.Usuario;
 import com.uv.enzona.api.identidad.repositorio.UsuarioRepository;
 import com.uv.enzona.api.identidad.servicio.CodigoVerificacionEmitido;
@@ -48,6 +49,11 @@ public class NotificacionesListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void codigoEmitido(CodigoVerificacionEmitido evento) {
+        if (evento.proposito() == PropositoCodigo.RECUPERACION) {
+            notificador.enviarCodigoRecuperacion(evento.destino(), evento.nombre(), evento.codigo(),
+                    evento.minutosVigencia());
+            return;
+        }
         notificador.enviarCodigo(evento.destino(), evento.canal(), evento.nombre(), evento.codigo(),
                 evento.minutosVigencia());
     }

@@ -24,6 +24,12 @@ public class LogNotificador implements Notificador {
     }
 
     @Override
+    public void enviarCodigoRecuperacion(String destino, String nombre, String codigo, int minutosVigencia) {
+        log.info("[DEV] Código para restablecer la contraseña de {}: {} (vigencia {} min)", destino, codigo,
+                minutosVigencia);
+    }
+
+    @Override
     public void enviarBoletos(MensajeBoletos mensaje) {
         log.info("[DEV] Correo a {} con {} boleto(s) de \"{}\"", mensaje.destinatario(), mensaje.boletos().size(),
                 mensaje.evento());

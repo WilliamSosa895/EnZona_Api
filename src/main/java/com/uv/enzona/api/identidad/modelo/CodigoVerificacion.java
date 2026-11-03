@@ -26,6 +26,10 @@ public class CodigoVerificacion {
     @Column(nullable = false, length = 10)
     private CanalVerificacion canal;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 15)
+    private PropositoCodigo proposito;
+
     @Column(name = "codigo_hash", nullable = false, length = 100)
     private String codigoHash;
 
@@ -44,11 +48,12 @@ public class CodigoVerificacion {
     protected CodigoVerificacion() {
     }
 
-    public static CodigoVerificacion nuevo(Long usuarioId, CanalVerificacion canal, String codigoHash,
-            OffsetDateTime expiraEn, OffsetDateTime ahora) {
+    public static CodigoVerificacion nuevo(Long usuarioId, CanalVerificacion canal, PropositoCodigo proposito,
+            String codigoHash, OffsetDateTime expiraEn, OffsetDateTime ahora) {
         CodigoVerificacion codigo = new CodigoVerificacion();
         codigo.usuarioId = usuarioId;
         codigo.canal = canal;
+        codigo.proposito = proposito;
         codigo.codigoHash = codigoHash;
         codigo.expiraEn = expiraEn;
         codigo.fechaCreacion = ahora;
@@ -82,6 +87,10 @@ public class CodigoVerificacion {
 
     public CanalVerificacion getCanal() {
         return canal;
+    }
+
+    public PropositoCodigo getProposito() {
+        return proposito;
     }
 
     public String getCodigoHash() {

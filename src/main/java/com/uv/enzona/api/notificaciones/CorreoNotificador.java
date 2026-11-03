@@ -106,6 +106,16 @@ public class CorreoNotificador implements Notificador {
     }
 
     @Override
+    public void enviarCodigoRecuperacion(String destino, String nombre, String codigo, int minutosVigencia) {
+        enviar(destino, "Restablece tu contraseña de EnZona", """
+                <p>Hola %s:</p>
+                <p>Recibimos una solicitud para cambiar tu contraseña. Tu código es
+                <strong style="font-size:22px;letter-spacing:4px">%s</strong>.</p>
+                <p>Vence en %d minutos. Si no pediste cambiarla, ignora este correo: tu contraseña sigue igual.</p>
+                """.formatted(e(nombre), codigo, minutosVigencia), null);
+    }
+
+    @Override
     public void enviarBoletos(MensajeBoletos mensaje) {
         StringBuilder cuerpo = new StringBuilder("""
                 <p>Hola %s:</p>

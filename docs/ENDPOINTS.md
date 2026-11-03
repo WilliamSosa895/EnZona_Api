@@ -42,6 +42,24 @@ Cuerpo: `correo`, `canal`. Envía un código nuevo e invalida el anterior (míni
 
 - **202** siempre, exista o no el correo.
 
+### POST `/api/auth/contrasena/recuperacion` 🔓
+«¿Olvidaste tu contraseña?». Cuerpo: `correo`. Envía al correo de la cuenta un código de 6 dígitos para
+restablecer la contraseña (mínimo 60 s entre envíos; vigencia `OTP_VALIDITY_MINUTES`). Los códigos de
+recuperación son independientes de los de verificación de la cuenta.
+
+- **202** siempre, exista o no el correo (no revela qué correos están registrados). Tampoco se envía nada a
+  cuentas `BLOQUEADO`.
+
+### POST `/api/auth/contrasena/restablecimiento` 🔓
+Cambia la contraseña con el código recibido. Cuerpo: `correo`, `codigo` (6 dígitos), `nuevaContrasena`
+(8 a 72 caracteres, con letras y números). Al aceptarse, el código queda consumido, se borra el bloqueo
+temporal por intentos fallidos y, como el código llegó al correo de la cuenta, el correo queda verificado
+(una cuenta `PENDIENTE` a la que solo le faltaba eso pasa a `ACTIVO`).
+
+- **204** sin cuerpo.
+- **Errores:** 400 `VALIDACION` · 400 `CODIGO_VERIFICACION_INVALIDO` (código incorrecto, sin código vigente o
+  correo desconocido) · 400 `CODIGO_VERIFICACION_EXPIRADO` · 403 `CUENTA_BLOQUEADA` · 429 `DEMASIADOS_INTENTOS`
+
 ### POST `/api/auth/sesion` 🔓
 Cuerpo: `identificador` (correo o CURP) y `contrasena` (RF-03).
 

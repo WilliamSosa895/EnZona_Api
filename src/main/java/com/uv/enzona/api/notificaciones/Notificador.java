@@ -10,6 +10,9 @@ public interface Notificador {
 
     void enviarCodigo(String destino, CanalVerificacion canal, String nombre, String codigo, int minutosVigencia);
 
+    /** Código para restablecer la contraseña; siempre va al correo de la cuenta. */
+    void enviarCodigoRecuperacion(String destino, String nombre, String codigo, int minutosVigencia);
+
     void enviarBoletos(MensajeBoletos mensaje);
 
     void avisarCancelacion(String destinatario, String nombre, String evento, String motivo);

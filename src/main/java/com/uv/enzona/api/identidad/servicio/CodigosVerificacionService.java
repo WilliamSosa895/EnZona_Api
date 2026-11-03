@@ -5,6 +5,7 @@ import com.uv.enzona.api.comun.error.ApiException;
 import com.uv.enzona.api.comun.error.ErrorCodigo;
 import com.uv.enzona.api.identidad.modelo.CanalVerificacion;
 import com.uv.enzona.api.identidad.modelo.CodigoVerificacion;
+import com.uv.enzona.api.identidad.modelo.PropositoCodigo;
 import com.uv.enzona.api.identidad.modelo.Usuario;
 import com.uv.enzona.api.identidad.repositorio.CodigoVerificacionRepository;
 import com.uv.enzona.api.identidad.repositorio.UsuarioRepository;
@@ -46,17 +47,62 @@ public class CodigosVerificacionService {
         this.reloj = reloj;
     }
 
-    /** Invalida los códigos anteriores del canal y emite uno nuevo. Debe correr dentro de una transacción. */
+    /** Invalida los códigos de verificación anteriores del canal y emite uno nuevo. Debe correr dentro de una transacción. */
     @Transactional(propagation = Propagation.MANDATORY)
     public void emitir(Usuario usuario, CanalVerificacion canal) {
+        emitir(usuario, canal, PropositoCodigo.VERIFICACION);
+    }
+
+    /**
+     * Invalida los códigos anteriores del mismo canal y propósito y emite uno nuevo. Los códigos
+     * de cada propósito viven aparte: pedir uno de recuperación no anula el de verificación.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void emitir(Usuario usuario, CanalVerificacion canal, PropositoCodigo proposito) {
         OffsetDateTime ahora = OffsetDateTime.now(reloj);
-        codigos.findByUsuarioIdAndCanalAndUsadoFalse(usuario.getId(), canal).forEach(CodigoVerificacion::marcarUsado);
+        codigos.findByUsuarioIdAndPropositoAndCanalAndUsadoFalse(usuario.getId(), proposito, canal)
+                .forEach(CodigoVerificacion::marcarUsado);
         String codigo = generador.generar();
         int vigencia = propiedades.verificacion().minutosVigencia();
-        codigos.save(CodigoVerificacion.nuevo(usuario.getId(), canal, encoder.encode(codigo),
+        codigos.save(CodigoVerificacion.nuevo(usuario.getId(), canal, proposito, encoder.encode(codigo),
                 ahora.plusMinutes(vigencia), ahora));
         String destino = canal == CanalVerificacion.CORREO ? usuario.getCorreo() : usuario.getTelefono();
-        eventos.publishEvent(new CodigoVerificacionEmitido(destino, canal, usuario.getNombre(), codigo, vigencia));
+        eventos.publishEvent(new CodigoVerificacionEmitido(destino, canal, proposito, usuario.getNombre(), codigo,
+                vigencia));
+    }
+
+    /**
+     * Comprueba el último código vigente del usuario para ese canal y propósito y lo consume.
+     * Lanza {@code CODIGO_VERIFICACION_INVALIDO}, {@code CODIGO_VERIFICACION_EXPIRADO} o
+     * {@code DEMASIADOS_INTENTOS}; los intentos fallidos quedan registrados en el código.
+     */
+    @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = ApiException.class)
+    public void consumir(Usuario usuario, CanalVerificacion canal, PropositoCodigo proposito, String codigoEscrito) {
+        CodigoVerificacion codigo = codigos
+                .findFirstByUsuarioIdAndPropositoAndCanalAndUsadoFalseOrderByFechaCreacionDesc(usuario.getId(),
+                        proposito, canal)
+                .orElseThrow(() -> new ApiException(ErrorCodigo.CODIGO_VERIFICACION_INVALIDO));
+
+        if (codigo.expirado(OffsetDateTime.now(reloj))) {
+            throw new ApiException(ErrorCodigo.CODIGO_VERIFICACION_EXPIRADO);
+        }
+        if (codigo.intentosAgotados(propiedades.verificacion().maximoIntentos())) {
+            throw new ApiException(ErrorCodigo.DEMASIADOS_INTENTOS,
+                    "Se agotaron los intentos para este código; solicita uno nuevo");
+        }
+        if (!encoder.matches(codigoEscrito, codigo.getCodigoHash())) {
+            codigo.registrarIntento();
+            throw new ApiException(ErrorCodigo.CODIGO_VERIFICACION_INVALIDO);
+        }
+        codigo.marcarUsado();
+    }
+
+    /** true si se emitió un código de ese canal y propósito hace menos de 60 s (antiabuso del correo o SMS). */
+    public boolean emitidoHacePoco(Usuario usuario, CanalVerificacion canal, PropositoCodigo proposito) {
+        OffsetDateTime limite = OffsetDateTime.now(reloj).minusSeconds(SEGUNDOS_ENTRE_REENVIOS);
+        return codigos.findFirstByUsuarioIdAndPropositoAndCanalOrderByFechaCreacionDesc(usuario.getId(), proposito, canal)
+                .map(ultimo -> ultimo.getFechaCreacion().isAfter(limite))
+                .orElse(false);
     }
 
     /**
@@ -68,23 +114,7 @@ public class CodigosVerificacionService {
         CanalVerificacion canal = solicitud.canalOPorDefecto();
         Usuario usuario = usuarios.findByCorreo(Correos.normalizar(solicitud.correo()))
                 .orElseThrow(() -> new ApiException(ErrorCodigo.CODIGO_VERIFICACION_INVALIDO));
-        CodigoVerificacion codigo = codigos
-                .findFirstByUsuarioIdAndCanalAndUsadoFalseOrderByFechaCreacionDesc(usuario.getId(), canal)
-                .orElseThrow(() -> new ApiException(ErrorCodigo.CODIGO_VERIFICACION_INVALIDO));
-
-        if (codigo.expirado(OffsetDateTime.now(reloj))) {
-            throw new ApiException(ErrorCodigo.CODIGO_VERIFICACION_EXPIRADO);
-        }
-        if (codigo.intentosAgotados(propiedades.verificacion().maximoIntentos())) {
-            throw new ApiException(ErrorCodigo.DEMASIADOS_INTENTOS,
-                    "Se agotaron los intentos para este código; solicita uno nuevo");
-        }
-        if (!encoder.matches(solicitud.codigo(), codigo.getCodigoHash())) {
-            codigo.registrarIntento();
-            throw new ApiException(ErrorCodigo.CODIGO_VERIFICACION_INVALIDO);
-        }
-
-        codigo.marcarUsado();
+        consumir(usuario, canal, PropositoCodigo.VERIFICACION, solicitud.codigo());
         if (canal == CanalVerificacion.CORREO) {
             usuario.verificarCorreo();
         } else {
@@ -105,17 +135,10 @@ public class CodigosVerificacionService {
             boolean yaVerificado = canal == CanalVerificacion.CORREO
                     ? usuario.isCorreoVerificado() : usuario.isTelefonoVerificado();
             boolean sinTelefono = canal == CanalVerificacion.TELEFONO && usuario.getTelefono() == null;
-            if (yaVerificado || sinTelefono || reenvioDemasiadoPronto(usuario, canal)) {
+            if (yaVerificado || sinTelefono || emitidoHacePoco(usuario, canal, PropositoCodigo.VERIFICACION)) {
                 return;
             }
             emitir(usuario, canal);
         });
-    }
-
-    private boolean reenvioDemasiadoPronto(Usuario usuario, CanalVerificacion canal) {
-        OffsetDateTime limite = OffsetDateTime.now(reloj).minusSeconds(SEGUNDOS_ENTRE_REENVIOS);
-        return codigos.findFirstByUsuarioIdAndCanalOrderByFechaCreacionDesc(usuario.getId(), canal)
-                .map(ultimo -> ultimo.getFechaCreacion().isAfter(limite))
-                .orElse(false);
     }
 }
