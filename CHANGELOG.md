@@ -5,6 +5,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 ## [Sin publicar]
 
 ### Agregado
+- **Recuperación de contraseña:** `POST /api/auth/contrasena/recuperacion` envía al correo un código de 6 dígitos
+  (202 siempre) y `POST /api/auth/contrasena/restablecimiento` cambia la contraseña con ese código (204). Migración
+  V7: columna `codigo_verificacion.proposito` (`VERIFICACION` | `RECUPERACION`) para que los códigos de
+  recuperación no se mezclen con los de activación. Correo propio «Restablece tu contraseña de EnZona».
 - **Portada de eventos:** migración V6 (`evento.imagen_url`, `evento.imagen_id`), `imagenUrl` en `EventoRespuesta`,
   `POST`/`DELETE /api/eventos/{id}/imagen` (multipart, solo organizador dueño o administrador, JPEG/PNG/WebP validados
   por contenido) y almacén intercambiable: `local` (archivos servidos en `/api/imagenes`) o `cloudinary`
