@@ -5,6 +5,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 ## [Sin publicar]
 
 ### Agregado
+- **Latido para alojamientos gratuitos:** con `PUBLIC_URL` definida, la API se pide a sí misma `/actuator/health`
+  cada 10 minutos (`MantenerDespierta`) para que Render no apague la instancia tras 15 minutos sin tráfico. Guía de
+  despliegue en [docs/DESPLIEGUE_RENDER.md](docs/DESPLIEGUE_RENDER.md).
 - **Recuperación de contraseña:** `POST /api/auth/contrasena/recuperacion` envía al correo un código de 6 dígitos
   (202 siempre) y `POST /api/auth/contrasena/restablecimiento` cambia la contraseña con ese código (204). Migración
   V7: columna `codigo_verificacion.proposito` (`VERIFICACION` | `RECUPERACION`) para que los códigos de
