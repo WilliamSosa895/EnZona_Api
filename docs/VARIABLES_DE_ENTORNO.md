@@ -73,3 +73,9 @@ Si falta alguna, la aplicación no arranca: es intencional, para no operar con c
 - `RESEND_API_KEY` (o `MAIL_PASSWORD`) permite enviar correo en nombre del dominio: solo en `.env` o en el gestor de secretos del servidor. Si se filtra, revócala en Resend y crea otra.
 - `PAYMENT_PROVIDER=sandbox` no cobra dinero real. Para producción hay que implementar la pasarela elegida (`PasarelaPago`).
 - Rotar `JWT_SECRET` cierra todas las sesiones activas. Rotar `TICKET_HMAC_SECRET` invalida los boletos emitidos: hazlo solo entre eventos.
+
+## Despliegue
+
+| Variable | Obligatoria | Descripción |
+|---|---|---|
+| `PUBLIC_URL` | No | Dirección pública de la API, por ejemplo `https://enzona-api.onrender.com`. Si está definida, la API se pide a sí misma `/actuator/health` cada 10 minutos para que un alojamiento gratuito no la apague por falta de tráfico. Vacía en desarrollo. Ver [DESPLIEGUE_RENDER.md](DESPLIEGUE_RENDER.md). |

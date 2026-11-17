@@ -5,6 +5,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 ## [Sin publicar]
 
 ### Agregado
+- **Latido para alojamientos gratuitos:** con `PUBLIC_URL` definida, la API se pide a sí misma `/actuator/health`
+  cada 10 minutos (`MantenerDespierta`) para que Render no apague la instancia tras 15 minutos sin tráfico. Guía de
+  despliegue en [docs/DESPLIEGUE_RENDER.md](docs/DESPLIEGUE_RENDER.md).
 - **Portada de eventos:** migración V6 (`evento.imagen_url`, `evento.imagen_id`), `imagenUrl` en `EventoRespuesta`,
   `POST`/`DELETE /api/eventos/{id}/imagen` (multipart, solo organizador dueño o administrador, JPEG/PNG/WebP validados
   por contenido) y almacén intercambiable: `local` (archivos servidos en `/api/imagenes`) o `cloudinary`
