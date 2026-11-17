@@ -86,6 +86,10 @@ springdoc:
     tags-sorter: alpha
 
 enzona:
+  despliegue:
+    # Dirección pública de la API (vacía en desarrollo). Con ella la API se pide a sí misma
+    # /actuator/health cada 10 min para que un alojamiento gratuito (Render) no la apague.
+    url-publica: ${PUBLIC_URL:}
   jwt:
     secreto: ${JWT_SECRET}
     emisor: ${JWT_ISSUER:enzona-api}
